@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battlefish</title>
+<link rel="stylesheet" href="/static/common.css">
+<style>
+  /* Sized from the window height so it reads from across the room on the TV. */
+  html { font-size: clamp(12px, 2.1vh, 44px); }
+  :root { --gold: #ffcc66; }
+  body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+  .layout { flex: 1; min-height: 0; display: flex; }
+
+  .tank-wrap { position: relative; flex: 1; min-width: 0; }
+
+  /* Ticker items scrolling along the bottom of the screen, under the tank and side panel. tank.js fills the
+     track twice and sets the duration, so it loops seamlessly at a steady speed. */
+  .ticker {
+    flex: none; overflow: hidden; white-space: nowrap; background: #020b14; border-top: 1px solid var(--line);
+    font-size: 1rem; line-height: 2.1rem; height: 2.1rem;
+  }
+  .ticker[hidden] { display: none; }
+  .ticker-track { display: inline-block; animation: ticker var(--ticker-s, 60s) linear infinite; }
+  .ticker-item { display: inline-block; padding: 0 1.4rem; border-right: 1px solid var(--line); }
+  .ticker-item .k { color: var(--muted); margin-right: 0.45em; }
+  .ticker-item .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ticker-item .up { color: var(--win); }
+  .ticker-item .down { color: var(--loss); }
+  .ticker-item.asof .k, .ticker-item.group .k { color: var(--accent); }
+  .ticker-item.asof.stale .k { color: var(--warn); }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+  #tank { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .banner {
+    position: absolute; top: 1rem; left: 50%; transform: translateX(-50%);
+    background: rgba(4, 18, 31, 0.78); border: 1px solid var(--line); border-radius: 2rem;
+    padding: 0.4rem 1.2rem; font-size: 1.15rem; font-weight: 600; white-space: nowrap;
+    transition: opacity 0.6s; opacity: 0; pointer-events: none;
+  }
+  .banner.show { opacity: 1; }
+
+  .tank-status, .join-hint {
+    position: absolute; bottom: 0.6rem; font-size: 0.8rem; color: var(--text);
+    background: rgba(4, 18, 31, 0.6); padding: 0.2rem 0.7rem; border-radius: 1rem;
+  }
+  .tank-status { left: 0.8rem; }
+  .join-hint { right: 0.8rem; }
+  .join-hint a { color: inherit; }
+  .tank-status.offline { color: var(--warn); }
+
+  .empty {
+    position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+    font-size: 1.4rem; padding: 2rem; pointer-events: none;
+  }
+  .empty[hidden] { display: none; }
+
+  .panel {
+    width: clamp(18rem, 28vw, 34rem); flex: none; display: flex; flex-direction: column;
+    background: var(--panel); border-left: 1px solid var(--line); min-height: 0;
+  }
+  .panel-head { padding: 0.8rem 1rem 0.4rem; }
+  .panel-head h1 { font-size: 1.4rem; letter-spacing: 0.02em; }
+  .panel-head .version { font-size: 0.75rem; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-left: 0.4rem; }
+  .tabs { display: flex; gap: 0.3rem; padding: 0.4rem 1rem 0; border-bottom: 1px solid var(--line); }
+  .tabs button {
+    border-radius: var(--radius) var(--radius) 0 0; border-bottom: none; background: transparent;
+    color: var(--muted); padding: 0.35rem 0.8rem;
+  }
+  .tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+  .filters { display: grid; gap: 0.4rem; padding: 0.6rem 1rem; font-size: 0.85rem; }
+  .filters label { display: flex; align-items: center; gap: 0.5rem; }
+  .filters label[hidden] { display: none; }
+  .filters label > span { width: 3rem; flex: none; }
+  .filters select { flex: 1; min-width: 0; }
+  .tab-body { flex: 1; overflow-y: auto; padding: 0 1rem 1rem; min-height: 0; }
+
+  .fight { padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+  .fight .who { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .fight .who strong { font-weight: 600; }
+  .fight .meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+  .fight .focus { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 0.2em; }
+
+  table.board { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  table.board th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.75rem; padding: 0.3rem 0.25rem; }
+  table.board td { padding: 0.4rem 0.25rem; border-top: 1px solid var(--line); vertical-align: middle; }
+  table.board td.num, table.board th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* The name column takes what's left, shortening long names, and narrow side panels drop the streak (it's
+     still on each fish's card). */
+  table.board td.name { width: 100%; max-width: 0; }
+  @media (max-width: 1250px) { table.board .streak { display: none; } }
+  table.board tbody tr[data-id] { cursor: pointer; }
+  table.board tbody tr[data-id]:hover td { background: rgb(79 209 197 / 0.06); }
+  .wl { display: inline-flex; flex-direction: column; font-size: 0.78rem; line-height: 1.15; }
+  .name-cell { display: flex; align-items: center; gap: 0.45rem; min-width: 0; }
+  .name-cell > div { min-width: 0; }
+  .name-cell span.n { display: flex; align-items: center; gap: 0.3rem; font-weight: 600; overflow: hidden; white-space: nowrap; }
+  .name-cell span.n > span { overflow: hidden; text-overflow: ellipsis; }
+  .name-cell span.p { display: block; font-size: 0.75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name-cell span.p .st { color: var(--accent); }
+  .crown { width: 1em; height: 1em; flex: none; color: var(--gold); }
+  .gone { font-size: 0.7rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 0.4em; font-weight: 400; flex: none; }
+  .gold { color: var(--gold); }
+  .week-note { font-size: 0.78rem; color: var(--muted); margin: 0 0 0.4rem; }
+  .week-note b { color: var(--text); font-weight: 600; }
+  .week-note.after { margin-top: 0.5rem; }
+
+  .card { background: var(--panel-2); border-radius: var(--radius); padding: 0.8rem; margin-bottom: 0.8rem; }
+  .card h2 { font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card .sub { color: var(--muted); font-size: 0.8rem; margin: 0.15rem 0 0.6rem; }
+  .section-title { font-size: 0.8rem; color: var(--muted); margin: 0.7rem 0 0.25rem; font-weight: 600; }
+  .section-title.first { margin-top: 0; }
+  .cname { font-weight: 700; font-size: 1.05rem; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 0.4rem; margin-top: 0.4rem; }
+  .fact { background: var(--panel); border-radius: var(--radius); padding: 0.35rem 0.5rem; }
+  .fact .k { font-size: 0.7rem; color: var(--muted); }
+  .fact .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .champ { font-size: 0.8rem; color: var(--gold); margin-bottom: 0.4rem; }
+  .styles { font-size: 0.85rem; }
+  .back { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; font-size: 0.85rem; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+  <div class="layout">
+  <main class="tank-wrap">
+    <canvas id="tank"></canvas>
+    <div class="banner" id="banner"></div>
+    <div class="empty" id="empty" hidden></div>
+    <div class="tank-status" id="status">Connecting…</div>
+    <div class="join-hint" id="joinHint"></div>
+  </main>
+  <aside class="panel">
+    <header class="panel-head"><h1>Battlefish<span class="version" id="version"></span></h1></header>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabHistory" aria-selected="true" data-view="historyView">Recent fights</button>
+      <button role="tab" id="tabLeaders" aria-selected="false" data-view="leaderView">Leaderboard</button>
+    </div>
+    <div class="filters">
+      <label><span>Show</span><select id="filter"><option value="">All fish</option></select></label>
+      <label id="weekRow" hidden><span>Week</span><select id="week"><option value="live">This week</option></select></label>
+    </div>
+    <div class="tab-body" id="historyView" role="tabpanel"></div>
+    <div class="tab-body" id="leaderView" role="tabpanel" hidden></div>
+  </aside>
+  </div>
+  <div class="ticker" id="ticker" aria-label="Ticker" hidden><div class="ticker-track" id="tickerTrack"></div></div>
+  <script src="/static/monster-art.js"></script>
+  <script src="/static/tank.js"></script>
+</body>
+</html>

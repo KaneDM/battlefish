@@ -1,0 +1,13 @@
+{
+  "host": "0.0.0.0",
+  "port": 8765,
+  "public_url": "http://game-server:8765",
+  "ticker": {
+    "source": "off",
+    "title": "Office news",
+    "about": "news and stats from around the office",
+    "file": "data/ticker-feed.json",
+    "url": "",
+    "refresh_minutes": 5
+  }
+}

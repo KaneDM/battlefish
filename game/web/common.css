@@ -1,0 +1,80 @@
+:root {
+  --bg: #04121f;
+  --panel: #0a2233;
+  --panel-2: #0f2e44;
+  --line: #1d4a66;
+  --text: #e6f4fb;
+  --muted: #8fb3c7;
+  --accent: #4fd1c5;
+  --accent-ink: #032a27;
+  --win: #6be38f;
+  --loss: #ff8a7a;
+  --warn: #ffcc66;
+  --danger: #ff6b6b;
+  --radius: 0.5rem;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.4;
+}
+
+h1, h2, h3 { margin: 0; line-height: 1.2; }
+
+a { color: var(--accent); }
+
+button, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.45em 0.9em;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.danger { border-color: var(--danger); color: var(--danger); }
+button.danger:hover:not(:disabled) { background: var(--danger); color: #2a0606; }
+
+input[type="text"], input[type="password"], input[type="number"], select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.4em 0.6em;
+}
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.muted { color: var(--muted); }
+.win { color: var(--win); }
+.loss { color: var(--loss); }
+
+.swatch {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  border: 2px solid var(--accent-color, #fff);
+  background: var(--body-color, #888);
+  flex: none;
+}
+
+.msg { padding: 0.6em 0.8em; border-radius: var(--radius); margin: 0.6em 0; }
+.msg.error { background: #3a1214; color: #ffc4c4; border: 1px solid #6e2a2e; }
+.msg.ok { background: #0f3324; color: #b8f5cf; border: 1px solid #22694a; }
+.msg:empty { display: none; }

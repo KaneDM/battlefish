@@ -1,0 +1,11 @@
+# Each office's own files: never committed.
+game/data/
+game/site.json
+game/ticker_adapter.py
+
+# Python and editor clutter.
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db
