@@ -1,5 +1,7 @@
 # Battlefish
 
+![A preview image of Battlefish, showing seven fish (four of whom are fighting) and a log of recent fights.](preview.png)
+
 An idle game for the office recreationally developed by [Design Master Software](https://www.designmaster.biz) employees. Everyone designs a fish, and the fish fight each other in an aquarium shown on a shared TV, all day, with no one at the controls. Each week the game deals every fish a new fighting style, and the week's strongest fish wears the crown for the next one.
 
 It's a small Python program (Python 3.9 or newer, nothing else to install) that serves a few web pages: the aquarium for the TV, a workshop where players make their fish, a How to play page, and an admin page.
