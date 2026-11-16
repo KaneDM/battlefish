@@ -25,3 +25,7 @@ This repository is meant to be handed to an AI coding agent, which interviews yo
 ## Updates
 
 New versions are listed in the changelog at the end of [game/README.md](game/README.md), which is also the game's How to play page. To update an installed copy, follow section 7 of [DEPLOY.md](DEPLOY.md). Your own `site.json`, any `ticker_adapter.py` and the `data/` folder are yours, and updates never include them.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
