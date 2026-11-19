@@ -28,7 +28,7 @@ import styles
 
 log = logging.getLogger("battlefish")
 
-VERSION = "1.0.0"  # keep in step with the changelog in README.md
+VERSION = "1.1.0"  # keep in step with the changelog in README.md
 
 STATS = [
     {"key": "health", "label": "Health", "blurb": "More hit points."},
@@ -40,6 +40,16 @@ STATS = [
 ]
 STAT_KEYS = [s["key"] for s in STATS]
 SHAPES = ["fish", "eel", "puffer", "squid", "seahorse", "cuttlefish", "prawn", "angler", "ray", "school"]
+
+# The choices for the seasonal_themes setting, whose value is an index into this list. "auto" picks the aquarium's
+# theme by date (web/themes.js); a theme key shows that theme all the time. Add new themes at the end, so a saved
+# setting keeps meaning the same choice. Each key must match one in web/themes.js.
+THEME_CHOICES = [("off", "Off"), ("auto", "By date"),
+                 ("newyear", "New Year's, all the time"), ("valentines", "Valentine's, all the time"),
+                 ("stpatricks", "St Patrick's, all the time"), ("easter", "Easter, all the time"),
+                 ("july4", "Independence Day, all the time"), ("halloween", "Halloween, all the time"),
+                 ("thanksgiving", "Thanksgiving, all the time"), ("december", "December, all the time")]
+CONFIG_OPTIONS = {"seasonal_themes": [label for _, label in THEME_CHOICES]}
 
 # (key, default, label, group, type, min, max). Admins can change these on the admin page.
 CONFIG_FIELDS = [
@@ -94,6 +104,7 @@ CONFIG_FIELDS = [
      "Skills", "int", 0, 1),
     ("size_per_elo", 100, "Elo difference that doubles a fish's size in the aquarium (smaller = a bigger size "
      "gap between high and low Elo; 0 = everyone the same size)", "Aquarium", "float", 0, 100000),
+    ("seasonal_themes", 1, "Seasonal aquarium decorations", "Aquarium", "int", 0, len(THEME_CHOICES) - 1),
 ]
 DEFAULT_CONFIG = {f[0]: f[1] for f in CONFIG_FIELDS}
 
@@ -1036,6 +1047,8 @@ class Game:
             return {"version": VERSION, "server_time": now, "paused": self.state["paused"],
                     "next_fight_at": self.state["next_fight_at"], "fights": fights,
                     "size_per_elo": self.config["size_per_elo"],
+                    "seasonal_themes": self.config["seasonal_themes"],
+                    "seasonal_theme": THEME_CHOICES[self.config["seasonal_themes"]][0],
                     "week": {"started_at": self.state["week"]["started_at"], "next_reset_at": self._next_reset_at()},
                     "champion": champion["id"] if champion else None,
                     "champion_week": champion["week"] if champion else None,
@@ -1199,7 +1212,7 @@ class Game:
                     "styles": [{"id": st["id"], "name": st["name"], "role": st["role"]}
                                for st in styles.STYLES.values()],
                     "config": [{"key": k, "default": dflt, "label": label, "group": group, "type": typ,
-                                "min": lo, "max": hi, "value": self.config[k]}
+                                "min": lo, "max": hi, "value": self.config[k], "options": CONFIG_OPTIONS.get(k)}
                                for k, dflt, label, group, typ, lo, hi in CONFIG_FIELDS]}
 
     def admin_action(self, action, payload):

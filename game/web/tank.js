@@ -16,12 +16,18 @@
   const els = {
     banner: $("banner"), empty: $("empty"), status: $("status"), joinHint: $("joinHint"), version: $("version"),
     filter: $("filter"), week: $("week"), weekRow: $("weekRow"), historyView: $("historyView"), leaderView: $("leaderView"),
-    tabs: [$("tabHistory"), $("tabLeaders")],
+    tabs: [$("tabHistory"), $("tabLeaders")], panelToggle: $("panelToggle"),
   };
 
   let W = 0, H = 0, dpr = 1, remPx = 16, scenery = null;
   let monsters = [];
   let sizePerElo = 100; // Elo that doubles a fish's size; an admin setting sent with each state
+  let seasonMode = "auto"; // seasonal decorations (themes.js): "off", "auto" (by date) or a theme key; an admin setting
+  // ?theme=december (or another theme's key, or off) previews a theme in this browser only; ?day=N picks the day of
+  // December.
+  const params = new URLSearchParams(location.search);
+  const themeOverride = (params.get("theme") || "").toLowerCase() || null;
+  if (+params.get("day") >= 1) Seasons.previewDay = Math.min(31, Math.floor(+params.get("day")));
   let styleNames = {}, styleCount = 6, rulesVersion = 0; // fighting style id -> name, from /api/rules
   let week = null;               // the live week: {started_at, next_reset_at}
   let champion = null, championWeek = null; // last week's champion (wears the crown) and that week's id
@@ -65,8 +71,23 @@
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    scenery = buildScenery();
+    rebuildScene();
+  }
+
+  function rebuildScene() {
+    if (!W || !H) return; // the sand loops step by W/48 and would never end at zero size
+    Seasons.scene({ ctx, W, H, dpr, canvasW: canvas.width, canvasH: canvas.height, kelp, kelpPoint });
     buildKelp();
+    scenery = buildScenery();
+    Seasons.layout();
+  }
+
+  // Which seasonal theme is showing: checked on load, every minute, and when the admin setting changes.
+  function checkSeason() {
+    const k = Seasons.pick(new Date(), seasonMode, themeOverride);
+    if (k === Seasons.key) return;
+    Seasons.activate(k);
+    rebuildScene();
   }
 
   function buildScenery() {
@@ -75,15 +96,18 @@
     c.height = canvas.height;
     const g = c.getContext("2d");
     g.scale(dpr, dpr);
+    const wc = Seasons.water() || ["#1386a6", "#0b5a7a", "#05263d"];
     const water = g.createLinearGradient(0, 0, 0, H);
-    water.addColorStop(0, "#1386a6");
-    water.addColorStop(0.35, "#0b5a7a");
-    water.addColorStop(1, "#05263d");
+    water.addColorStop(0, wc[0]);
+    water.addColorStop(0.35, wc[1]);
+    water.addColorStop(1, wc[2]);
     g.fillStyle = water;
     g.fillRect(0, 0, W, H);
 
     const rnd = seeded(7);
     const sandTop = H * 0.86;
+    const sandY = (x) => sandTop + Math.sin((x / W) * 9) * H * 0.012 + Math.sin((x / W) * 23) * H * 0.005;
+    const rocks = []; // where the rocks are, so seasonal decorations on the sand can keep clear of them
     g.fillStyle = "rgba(3, 30, 48, 0.5)";
     for (let i = 0; i < 6; i++) {
       g.beginPath();
@@ -94,13 +118,14 @@
     g.beginPath();
     g.moveTo(0, H);
     for (let x = 0; x <= W + 1; x += W / 48) {
-      g.lineTo(x, sandTop + Math.sin((x / W) * 9) * H * 0.012 + Math.sin((x / W) * 23) * H * 0.005);
+      g.lineTo(x, sandY(x));
     }
     g.lineTo(W, H);
     g.closePath();
     const sand = g.createLinearGradient(0, sandTop, 0, H);
-    sand.addColorStop(0, "#c9b27a");
-    sand.addColorStop(1, "#7d6a42");
+    const sc = Seasons.sand() || ["#c9b27a", "#7d6a42"];
+    sand.addColorStop(0, sc[0]);
+    sand.addColorStop(1, sc[1]);
     g.fillStyle = sand;
     g.fill();
     for (let i = 0; i < 500; i++) {
@@ -109,6 +134,7 @@
     }
     for (let i = 0; i < 5; i++) {
       const x = rnd() * W, r = H * (0.02 + rnd() * 0.03);
+      rocks.push({ x, r });
       const rg = g.createRadialGradient(x - r * 0.4, sandTop - r * 0.2, r * 0.1, x, sandTop + r * 0.3, r * 1.4);
       rg.addColorStop(0, "#7a8a90");
       rg.addColorStop(1, "#283338");
@@ -117,6 +143,8 @@
       g.ellipse(x, sandTop + r * 0.5, r * 1.4, r, 0, 0, Math.PI * 2);
       g.fill();
     }
+    Seasons.scene({ ctx, W, H, dpr, canvasW: canvas.width, canvasH: canvas.height, sandY, sandTop, rocks });
+    Seasons.decorate(g);
     return c;
   }
 
@@ -129,14 +157,19 @@
     }
   }
 
+  function kelpPoint(k, u, t) {
+    return { x: k.x + Math.sin(t * 0.7 + k.phase + u * 3) * u * H * 0.04, y: H * 0.89 - k.h * u };
+  }
+
   function drawRays(t) {
+    const top = Seasons.rays() || "rgba(180,240,255,0.09)";
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     for (let i = 0; i < 5; i++) {
       const x = W * (0.1 + i * 0.2) + Math.sin(t * 0.15 + i * 2) * W * 0.04;
       const w = W * (0.04 + 0.025 * Math.sin(t * 0.2 + i));
       const g = ctx.createLinearGradient(0, 0, 0, H * 0.85);
-      g.addColorStop(0, "rgba(180,240,255,0.09)");
+      g.addColorStop(0, top);
       g.addColorStop(1, "rgba(180,240,255,0)");
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -157,8 +190,7 @@
       let px = k.x, py = base;
       for (let i = 1; i <= 14; i++) {
         const u = i / 14;
-        const x = k.x + Math.sin(t * 0.7 + k.phase + u * 3) * u * H * 0.04;
-        const y = base - k.h * u;
+        const { x, y } = kelpPoint(k, u, t);
         ctx.beginPath();
         ctx.moveTo(px, py);
         ctx.lineTo(x, y);
@@ -167,6 +199,7 @@
         ctx.stroke();
         if (i % 3 === 0) {
           const side = i % 2 ? 1 : -1;
+          if (Seasons.kelpLeaf(x, y, k, side, u)) { px = x; py = y; continue; }
           ctx.beginPath();
           ctx.ellipse(x + side * k.w * 1.8, y, k.w * 2.2, k.w * 0.8, -side * 0.6, 0, Math.PI * 2);
           ctx.fillStyle = `hsl(${k.hue} 45% ${24 + u * 10}%)`;
@@ -419,7 +452,8 @@
     for (const vx of [0.18, 0.77]) {
       if (Math.random() < dt * 3) {
         particles.push({ kind: "bubble", x: W * vx + rand(-6, 6), y: H * 0.87, r: rand(0.004, 0.011) * H,
-          vx: 0, vy: -rand(0.06, 0.12) * H, life: 0, max: 14, wobble: rand(0, 6) });
+          vx: 0, vy: -rand(0.06, 0.12) * H, life: 0, max: 14, wobble: rand(0, 6), tint: Seasons.bubbleTint(),
+          heart: Seasons.heartBubble() });
       }
     }
   }
@@ -461,7 +495,13 @@
         ctx.stroke();
       } else if (front === (p.front || p.wobble == null)) {
         // Scuffle and click bubbles go in front of the monsters; the vents' ambient bubbles behind.
-        ctx.strokeStyle = `rgba(220,245,255,${0.55 * Math.min(1, fade * 3)})`;
+        ctx.strokeStyle = `rgba(${p.tint || "220,245,255"},${0.55 * Math.min(1, fade * 3)})`;
+        if (p.heart) { // Valentine's
+          ctx.lineWidth = Math.max(1, p.r * 0.18);
+          Seasons.heartPath(ctx, p.x, p.y, p.r * 1.1);
+          ctx.stroke();
+          continue;
+        }
         ctx.lineWidth = Math.max(1, p.r * 0.18);
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -510,11 +550,20 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (scenery) ctx.drawImage(scenery, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    Seasons.far(t, dt);
     drawRays(t);
     drawKelp(t);
+    Seasons.back(t, dt);
     drawParticles(false);
     for (const a of [...actors.values()].sort((p, q) => p.y - q.y)) drawActor(a, t);
     drawParticles(true);
+    const glass = Seasons.glass();
+    if (glass) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(glass, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    Seasons.front(t);
     drawFloaters();
     requestAnimationFrame(frame);
   }
@@ -526,6 +575,11 @@
     const toLocal = (serverTs) => serverTs - s.server_time + tl + EVENT_DELAY;
     monsters = s.monsters;
     sizePerElo = s.size_per_elo ?? 100;
+    const mode = s.seasonal_theme ?? "auto";
+    if (mode !== seasonMode) {
+      seasonMode = mode;
+      checkSeason();
+    }
     const reset = week && s.week && s.week.started_at !== week.started_at;
     week = s.week || null;
     champion = s.champion ?? null;
@@ -1165,8 +1219,30 @@
     if (t - lastHistoryLoad > HISTORY_REFRESH_S) loadHistory();
   }, 1000);
 
+  // The side panel can be hidden so the tank fills the width. Each browser remembers its own choice.
+  const PANEL_KEY = "designMonsters.panelCollapsed";
+  function setPanelCollapsed(collapsed, remember) {
+    document.body.classList.toggle("panel-collapsed", collapsed);
+    const label = collapsed ? "Show the side panel" : "Hide the side panel";
+    els.panelToggle.setAttribute("aria-expanded", String(!collapsed));
+    els.panelToggle.setAttribute("aria-label", label);
+    els.panelToggle.title = label;
+    if (remember) {
+      try { localStorage.setItem(PANEL_KEY, collapsed ? "1" : "0"); } catch { /* private window: just don't remember */ }
+    }
+    resize();
+  }
+  els.panelToggle.addEventListener("click", () =>
+    setPanelCollapsed(!document.body.classList.contains("panel-collapsed"), true));
+  let startCollapsed = false;
+  try { startCollapsed = localStorage.getItem(PANEL_KEY) === "1"; } catch { /* no storage: start open */ }
+  document.body.classList.toggle("panel-collapsed", startCollapsed);
+  setPanelCollapsed(startCollapsed, false);
+
   window.addEventListener("resize", () => { resize(); tickerResized(); });
   resize();
+  checkSeason();
+  setInterval(checkSeason, 60000);
   fetch("/api/rules").then((r) => r.json()).then((rules) => {
     styleNames = Object.fromEntries((rules.styles || []).map((st) => [st.id, st.name]));
     styleCount = (rules.styles || []).length || styleCount;

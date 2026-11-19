@@ -96,9 +96,10 @@ The champion wears a crown in the tank all the next week, and has a crown on the
   - **Second Wind:** "Second Wind!" pops up with the HP it heals, and a green ring pulses while its Regeneration is boosted.
 - A fish that's badly hurt rolls belly-up and floats toward the top until it recovers; a champion's crown drifts off while it's belly-up and settles back when it rights itself.
 {{ticker_help}}
-- The side panel has two tabs, **Recent fights** and the **Leaderboard**. The version of the game that's running is shown next to the title.
+- The side panel has two tabs, **Recent fights** and the **Leaderboard**. The version of the game that's running is shown next to the title. To give the tank the whole width, click the small arrow tab at the top right of the tank to hide the side panel, and click it again to bring the panel back. Your browser remembers which you chose.
 - To browse it yourself, open `{{site_url}}/` on your own computer. Click a tab, or choose a fish under **Show** to see only that fish's fights. With a fish chosen, the leaderboard shows its card: its style, Elo, average Elo so far, record, streaks, damage dealt, record against each opponent this week, and its recent styles.
 - The leaderboard ranks fish by Elo and shows each one's style under its name, its win percentage, and its wins and losses (wins on top). Last week's champion has a crown. When the side panel is narrow, the streak column is left out; it's still on a chosen fish's card.
+- Around holidays the tank is decorated for the season, and now and then a visitor crosses the far background. The seasons are New Year's (Dec 30 – Jan 1), Valentine's (Feb 7–14), St Patrick's (Mar 10–17), Easter (the week of Good Friday), Independence Day (Jun 27 – Jul 4), Halloween (Oct 24–31), Thanksgiving (Thanksgiving week) and December, when a present appears under the tree each day until Christmas Eve. The decorations are just for show: they never change the fish or the fights.
 - On your own computer, move the mouse over the tank and the fish swim after it. Click the water to make bubbles. Click a fish to startle it and show only its fights in the side panel; click it again to show everyone.
 
 ## Past weeks
@@ -130,6 +131,7 @@ The admin page is at `{{site_url}}/admin` and uses a shared password. From there
 - **Fight slowdown** (under **Fights**) sets how many times slower fights play out than the base speed: fish attack less often, heal more slowly in fights, Enrage builds more slowly, and Poison, Last Stand and Second Wind are stretched to match, so each fight has the same hits and the same odds, just spread out. The time limit and Enrage start are entered at base speed and stretched by it too. 1 is the base speed.
 - **Reset hour** (under **Week**) sets when the daily form is rolled and, on Mondays, when the week resets, in the server's local time.
 - Set how much bigger a higher Elo draws a fish, under **Aquarium**. Lower numbers make a bigger size gap, and 0 draws every fish the same size. Open aquariums pick up the change within a second, with no reload.
+- Choose the aquarium's seasonal decorations with **Seasonal aquarium decorations**, under **Aquarium**: **By date** (the default) shows each theme in its season, **Off** shows none, and choosing a theme shows it all the time, whatever the date. Open aquariums pick up the change within a second. To preview a theme in your own browser without changing anyone else's, add `?theme=` and a theme's name to the aquarium's address: `newyear`, `valentines`, `stpatricks`, `easter`, `july4`, `halloween`, `thanksgiving` or `december` (`?theme=off` hides them). For December, `&day=24` shows a given day's pile of presents.
 - Switch skills off or on with **Skills**. With skills off, fish fight with their style's stats only.
 - **End the week now:** ends the week right away, exactly like the Monday reset (standings saved, champion crowned, Elo and records cleared, styles dealt). The next reset is still the coming Monday's.
 - **Reset everything:** deletes all fish, history, and past weeks.
@@ -184,7 +186,7 @@ Saved data isn't affected by a restart. A fight in progress during a nightly or 
 | `styles.py` | The fighting styles: each one's name, role, blurb, stat split, and skills, and the weekly dealing rules. |
 | `site.json` | What's particular to this office: the address players use, the port, and the ticker's source. |
 | `ticker_adapter.py` | Only when the ticker's source is `adapter`: the code that turns this office's own data into ticker items. |
-| `web/` | The web pages. `monster-art.js` draws the fish (and the crown) for both the aquarium and the editor. |
+| `web/` | The web pages. `monster-art.js` draws the fish (and the crown) for both the aquarium and the editor. `themes.js` holds the aquarium's seasonal themes, each with its dates and its drawing. |
 | `setup/install-windows.ps1` | Windows only: the firewall rule, and the two scheduled tasks: the server itself and its nightly restart. |
 | `data/state.json` | Fish, this week's records, and fight history. Written every 10 seconds and after each fight. |
 | `data/state.json.bak` | Hourly backup, used automatically if `state.json` can't be read. |
@@ -207,6 +209,11 @@ The `data/` folder is created the first time the server runs. Don't edit `state.
 ## Changelog
 
 Versions use *major.minor.patch*. Patch releases fix bugs, minor releases add or change features, and major releases change the game in ways that need a reset. Every change that affects players gets an entry here.
+
+### 1.1.0
+
+- Seasonal decorations for the aquarium: New Year's, Valentine's, St Patrick's, Easter, Independence Day, Halloween, Thanksgiving and December, each with its own decorations and a visitor that crosses the far background now and then. In December a present appears under the tree each day until Christmas Eve. Holidays that usually close offices start a week early, so people see them on days they're in.
+- The aquarium's side panel can be hidden: click the arrow tab at the top right of the tank, and click it again to bring the panel back. The tank fills the space, and your browser remembers your choice.
 
 ### 1.0.0
 

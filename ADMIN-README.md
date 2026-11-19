@@ -37,7 +37,7 @@ The rules are built so that nobody can "solve" the game or win every week, and t
   - *Stat formulas*: what each stat point is worth.
   - *Week*: the **reset hour**, when the daily form rolls and the Monday reset happens (7 AM by default, server time).
   - *Skills*: switch all skills off or on.
-  - *Aquarium*: how much bigger high-Elo fish are drawn.
+  - *Aquarium*: how much bigger high-Elo fish are drawn, and the seasonal decorations: by date (the default), off, or one theme all the time.
 - **Reset:** **End the week now** does the Monday reset early. **Reset everything** deletes every fish and all history, which is handy for clearing test fish before launch.
 
 Changes take effect right away. The defaults are tuned, so the best first step is to launch as it is and adjust after a week or two of real play.

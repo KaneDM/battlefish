@@ -140,9 +140,15 @@
     $("cfgTabs").innerHTML = names.map((g) => `<button type="button" role="tab" data-cfgtab="${esc(g)}">${esc(g)}<span class="changed-dot" title="Unsaved changes" hidden></span></button>`).join("");
     $("cfgForm").innerHTML = Object.entries(groups).map(([g, fields]) => `<div class="cfg-group" data-group="${esc(g)}"><h3>${esc(g)}</h3>${fields.map((f) => {
       const off = Number(f.value) !== Number(f.default);
+      // A setting with named choices (its value is the choice's index) gets a dropdown instead of a number box.
+      const field = f.options
+        ? `<select id="cfg-${f.key}" name="${f.key}" data-saved="${f.value}">${f.options.map((o, i) =>
+          `<option value="${i}"${i === Number(f.value) ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`
+        : `<input type="number" id="cfg-${f.key}" name="${f.key}" value="${f.value}" data-saved="${f.value}" step="any" min="${f.min}" max="${f.max}">`;
+      const dflt = f.options ? f.options[f.default] : f.default;
       return `
-      <div class="cfg" data-find="${esc(`${f.label} ${f.key}`.toLowerCase())}"><label for="cfg-${f.key}">${esc(f.label)}<small${off ? ' class="off-default"' : ""}>Default ${f.default}${off ? " · changed" : ""}</small></label>
-      <input type="number" id="cfg-${f.key}" name="${f.key}" value="${f.value}" data-saved="${f.value}" step="any" min="${f.min}" max="${f.max}"></div>`;
+      <div class="cfg" data-find="${esc(`${f.label} ${f.key} ${(f.options || []).join(" ")}`.toLowerCase())}"><label for="cfg-${f.key}">${esc(f.label)}<small${off ? ' class="off-default"' : ""}>Default ${esc(String(dflt))}${off ? " · changed" : ""}</small></label>
+      ${field}</div>`;
     }).join("")}</div>`).join("") + '<p class="muted" id="cfgNone" hidden>No settings match.</p>';
     for (const b of $("cfgTabs").children) {
       b.addEventListener("click", () => {
@@ -176,7 +182,7 @@
   function markEdits() {
     const edited = new Set();
     let n = 0;
-    for (const input of $("cfgForm").querySelectorAll("input")) {
+    for (const input of $("cfgForm").querySelectorAll("input, select")) {
       const on = input.value.trim() === "" || Number(input.value) !== Number(input.dataset.saved);
       input.closest(".cfg").classList.toggle("edited", on);
       if (on) {
@@ -279,7 +285,7 @@
       healAll: () => act("heal_all", {}, "Every fish is back to full HP."),
       saveCfg: () => {
         const values = {};
-        for (const input of $("cfgForm").querySelectorAll("input")) values[input.name] = input.value;
+        for (const input of $("cfgForm").querySelectorAll("input, select")) values[input.name] = input.value;
         act("update_config", { values }, "Settings saved.");
       },
       defaultsCfg: () => {
@@ -314,6 +320,7 @@
     })) $(id).addEventListener("click", fn);
 
     $("cfgForm").addEventListener("input", markEdits);
+    $("cfgForm").addEventListener("change", markEdits);
     $("cfgFind").addEventListener("input", showSettings);
 
     $("loginForm").addEventListener("submit", async (ev) => {

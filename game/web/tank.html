@@ -56,6 +56,17 @@
   }
   .empty[hidden] { display: none; }
 
+  /* A drawer handle on the tank's right edge that hides the side panel, so the tank can fill the width. */
+  .panel-toggle {
+    position: absolute; top: 1rem; right: 0; z-index: 2; width: 1.7rem; height: 3.2rem; padding: 0;
+    display: grid; place-items: center; border-radius: var(--radius) 0 0 var(--radius); border-right: none;
+    background: rgba(4, 18, 31, 0.72); color: var(--muted);
+  }
+  .panel-toggle:hover, .panel-toggle:focus-visible { color: var(--text); background: rgba(10, 34, 51, 0.95); }
+  .panel-toggle svg { width: 1.1rem; height: 1.1rem; }
+  body.panel-collapsed .panel { display: none; }
+  body.panel-collapsed .panel-toggle svg { transform: rotate(180deg); }
+
   .panel {
     width: clamp(18rem, 28vw, 34rem); flex: none; display: flex; flex-direction: column;
     background: var(--panel); border-left: 1px solid var(--line); min-height: 0;
@@ -129,8 +140,11 @@
     <div class="empty" id="empty" hidden></div>
     <div class="tank-status" id="status">Connecting…</div>
     <div class="join-hint" id="joinHint"></div>
+    <button type="button" class="panel-toggle" id="panelToggle" aria-controls="panel" aria-expanded="true"
+      aria-label="Hide the side panel" title="Hide the side panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 5 16 12 9 19"/></svg></button>
   </main>
-  <aside class="panel">
+  <aside class="panel" id="panel">
     <header class="panel-head"><h1>Battlefish<span class="version" id="version"></span></h1></header>
     <div class="tabs" role="tablist">
       <button role="tab" id="tabHistory" aria-selected="true" data-view="historyView">Recent fights</button>
@@ -146,6 +160,7 @@
   </div>
   <div class="ticker" id="ticker" aria-label="Ticker" hidden><div class="ticker-track" id="tickerTrack"></div></div>
   <script src="/static/monster-art.js"></script>
+  <script src="/static/themes.js"></script>
   <script src="/static/tank.js"></script>
 </body>
 </html>
