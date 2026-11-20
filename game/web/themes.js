@@ -41,12 +41,13 @@ const Seasons = (() => {
     const days = Math.round((sunday - t) / DAY_MS);
     return days >= 0 && days <= 6;
   }
-  // Monday to Friday of the week of the fourth Thursday in November.
+  // Monday of the week before Thanksgiving through the Friday of Thanksgiving week (the fourth Thursday in
+  // November), since many people are out for Thanksgiving week itself. Always within November.
   function thanksgivingWeek(date) {
     if (date.getMonth() !== 10) return false;
     const first = new Date(date.getFullYear(), 10, 1).getDay(); // 0 = Sunday
     const thursday = 1 + ((4 - first + 7) % 7) + 21;
-    return date.getDate() >= thursday - 3 && date.getDate() <= thursday + 1;
+    return date.getDate() >= thursday - 10 && date.getDate() <= thursday + 1;
   }
   const WINDOWS = [
     { key: "newyear", test: (d) => within(md(12, 30), md(12, 31))(d) || within(md(1, 1), md(1, 1))(d) },
